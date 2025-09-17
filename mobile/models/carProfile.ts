@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 // mobile/models/carProfile.ts
 export interface CarProfile {
   id: string;  // новый идентификатор

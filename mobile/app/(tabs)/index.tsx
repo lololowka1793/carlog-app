@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -14,21 +14,24 @@ import { colors, spacing } from '../../constants/theme';
 import { Picker } from '@react-native-picker/picker';
 import { useProfileStore } from '../../store/profileStore';
 import type { CarProfile } from '../../models/carProfile';
-import { useEffect } from 'react';
 import { router } from 'expo-router';
 
-export default function IndexRedirect() {
+// Если нужен редирект со стартовой страницы — выделяем его как именованный экспорт:
+export const IndexRedirect = () => {
   useEffect(() => {
-    router.replace('/(tabs)/cars'); // стартуем сразу со списка авто
+    router.replace('/(tabs)/cars');
   }, []);
   return null;
-}
+};
 
 type TransportType = 'car' | 'motorcycle' | 'bus' | 'truck';
 type FuelType = 'gasoline' | 'diesel' | 'lpg' | 'electric';
 type DistanceUnit = 'km' | 'mi';
 
-export default function ProfileScreen() {
+// Константный список марок — не нужен useMemo
+const BRANDS = ['Audi', 'BMW', 'Mercedes', 'Hyundai'];
+
+const ProfileScreen: React.FC = () => {
   const { profile, loadProfile, setProfile } = useProfileStore();
 
   // локальное состояние формы
@@ -44,8 +47,6 @@ export default function ProfileScreen() {
   const [unit, setUnit] = useState<DistanceUnit>('km');
   const [vin, setVin] = useState<string>('');
   const [odometer, setOdometer] = useState<string>(''); // строкой для удобного ввода
-
-  const brands = useMemo(() => ['Audi', 'BMW', 'Mercedes', 'Hyundai'], []);
 
   // загрузка из AsyncStorage при первом рендере
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function ProfileScreen() {
     setUnit(profile.unit);
     setVin(profile.vin ?? '');
     setOdometer(profile.odometer ? String(profile.odometer) : '');
+    // обработка баков
     if (profile.tanks.length === 2) {
       setHasTwoTanks(true);
       setTank1(String(profile.tanks[0] ?? ''));
@@ -78,10 +80,13 @@ export default function ProfileScreen() {
   const submit = async () => {
     // минимальная валидация
     if (!model.trim()) return Alert.alert('Профиль авто', 'Введите модель автомобиля');
-    if (year && !/^\d{4}$/.test(year)) return Alert.alert('Профиль авто', 'Год укажите 4 цифрами, напр. 2013');
+    if (year && !/^\d{4}$/.test(year))
+      return Alert.alert('Профиль авто', 'Год укажите 4 цифрами, напр. 2013');
     if (!tank1) return Alert.alert('Профиль авто', 'Укажите объём бака');
-    if (hasTwoTanks && !tank2) return Alert.alert('Профиль авто', 'Укажите объём второго бака');
-    if (!/^\d+(\.\d+)?$/.test(odometer || '')) return Alert.alert('Профиль авто', 'Одометр укажите числом');
+    if (hasTwoTanks && !tank2)
+      return Alert.alert('Профиль авто', 'Укажите объём второго бака');
+    if (!/^\d+(\.\d+)?$/.test(odometer || ''))
+      return Alert.alert('Профиль авто', 'Одометр укажите числом');
 
     const data: CarProfile = {
       transport,
@@ -103,7 +108,9 @@ export default function ProfileScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ThemedText type="title" style={styles.title}>Профиль авто</ThemedText>
+        <ThemedText type="title" style={styles.title}>
+          Профиль авто
+        </ThemedText>
 
         {/* 1. Тип транспорта */}
         <Field label="Тип транспорта">
@@ -126,14 +133,16 @@ export default function ProfileScreen() {
             onValueChange={(v: string) => setBrand(v)}
             style={styles.picker as any}
           >
-            {brands.map((b) => <Picker.Item key={b} label={b} value={b} />)}
+            {BRANDS.map((b) => (
+              <Picker.Item key={b} label={b} value={b} />
+            ))}
           </Picker>
         </Field>
 
         {/* 3. Модель */}
         <Field label="Модель">
           <TextInput
-            placeholder="Например, Santa Fe"
+            placeholder="Например, Santa Fe"
             placeholderTextColor={colors.muted}
             value={model}
             onChangeText={setModel}
@@ -146,7 +155,7 @@ export default function ProfileScreen() {
           <Col>
             <Field label="Рег. номер">
               <TextInput
-                placeholder="ABC 123"
+                placeholder="ABC 123"
                 placeholderTextColor={colors.muted}
                 autoCapitalize="characters"
                 value={plate}
@@ -185,9 +194,9 @@ export default function ProfileScreen() {
 
         <Row>
           <Col>
-            <Field label={hasTwoTanks ? 'Бак 1 (л)' : 'Объём бака (л)'}>
+            <Field label={hasTwoTanks ? 'Бак 1 (л)' : 'Объём бака (л)'}>
               <TextInput
-                placeholder="Напр. 70"
+                placeholder="Напр. 70"
                 placeholderTextColor={colors.muted}
                 keyboardType="numeric"
                 value={tank1}
@@ -198,9 +207,9 @@ export default function ProfileScreen() {
           </Col>
           {hasTwoTanks && (
             <Col>
-              <Field label="Бак 2 (л)">
+              <Field label="Бак 2 (л)">
                 <TextInput
-                  placeholder="Напр. 30"
+                  placeholder="Напр. 30"
                   placeholderTextColor={colors.muted}
                   keyboardType="numeric"
                   value={tank2}
@@ -221,7 +230,7 @@ export default function ProfileScreen() {
           >
             <Picker.Item label="Бензин" value="gasoline" />
             <Picker.Item label="Дизель" value="diesel" />
-            <Picker.Item label="Газ (LPG)" value="lpg" />
+            <Picker.Item label="Газ (LPG)" value="lpg" />
             <Picker.Item label="Электричество" value="electric" />
           </Picker>
         </Field>
@@ -233,15 +242,15 @@ export default function ProfileScreen() {
             onValueChange={(v: DistanceUnit) => setUnit(v)}
             style={styles.picker as any}
           >
-            <Picker.Item label="Километры (км)" value="km" />
-            <Picker.Item label="Мили (mi)" value="mi" />
+            <Picker.Item label="Километры (км)" value="km" />
+            <Picker.Item label="Мили (mi)" value="mi" />
           </Picker>
         </Field>
 
         {/* 8. Одометр (новое поле) */}
         <Field label="Одометр">
           <TextInput
-            placeholder={unit === 'km' ? 'Напр. 180000' : 'Напр. 112000'}
+            placeholder={unit === 'km' ? 'Напр. 180000' : 'Напр. 112000'}
             placeholderTextColor={colors.muted}
             keyboardType="numeric"
             value={odometer}
@@ -251,7 +260,7 @@ export default function ProfileScreen() {
         </Field>
 
         {/* 9. VIN */}
-        <Field label="VIN (опционально)">
+        <Field label="VIN (опционально)">
           <TextInput
             placeholder="KMHJU81BDCU123456"
             placeholderTextColor={colors.muted}
@@ -269,9 +278,10 @@ export default function ProfileScreen() {
       </ScrollView>
     </ThemedView>
   );
-}
+};
 
-/* мини-компоненты для поля/сеток/кнопки */
+// Мини-компоненты для поля/сеток/кнопки
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={{ marginBottom: spacing(2) }}>
@@ -293,9 +303,18 @@ function Col({ children }: { children: React.ReactNode }) {
   return <View style={styles.col}>{children}</View>;
 }
 
-function PrimaryButton({ title, onPress }: { title: string; onPress: () => void }) {
+function PrimaryButton({
+  title,
+  onPress,
+}: {
+  title: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.button, pressed && { opacity: 0.9 }]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.button, pressed && { opacity: 0.9 }]}
+    >
       <ThemedText style={styles.buttonText}>{title}</ThemedText>
     </Pressable>
   );
@@ -333,3 +352,6 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: '#fff', fontWeight: '600' },
 });
+
+// экспортируем экран по умолчанию
+export default ProfileScreen;
