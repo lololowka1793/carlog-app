@@ -1,8 +1,10 @@
+// mobile/models/serviceEntry.ts
 export interface ServiceEntry {
   id: string;
+  carId: string;
   date: string;
-  type: string;   // "oil change", "filters", etc.
+  odometer: number;
+  type: string;
   cost: number;
   notes?: string;
-  odometer: number;
 }
