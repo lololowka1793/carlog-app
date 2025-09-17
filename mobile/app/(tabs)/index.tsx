@@ -89,6 +89,7 @@ const ProfileScreen: React.FC = () => {
       return Alert.alert('Профиль авто', 'Одометр укажите числом');
 
     const data: CarProfile = {
+      id: profile?.id ?? String(Date.now()),   // генерируем id, если его нет
       transport,
       brand,
       model: model.trim(),
@@ -100,9 +101,9 @@ const ProfileScreen: React.FC = () => {
       vin: vin.trim() || undefined,
       odometer: Number(odometer),
     };
-
     await setProfile(data);
     Alert.alert('Профиль авто', 'Данные сохранены ✅');
+
   };
 
   return (

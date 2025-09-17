@@ -1,13 +1,12 @@
-import { Platform } from 'react-native';
 // mobile/models/carProfile.ts
 export interface CarProfile {
-  id: string;  // новый идентификатор
+  id: string;  // уникальный идентификатор машины
   transport: 'car' | 'motorcycle' | 'bus' | 'truck';
   brand: string;
   model: string;
   plate: string;
   year?: number;
-  tanks: number[];   // [70] или [70, 30]
+  tanks: number[];         // например, [70] или [70, 30]
   fuel: 'gasoline' | 'diesel' | 'lpg' | 'electric';
   unit: 'km' | 'mi';
   vin?: string;
