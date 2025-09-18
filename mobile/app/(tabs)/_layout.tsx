@@ -15,31 +15,56 @@ function iconFor(routeName: string): keyof typeof Ionicons.glyphMap {
   }
 }
 
+import React from 'react';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+
 export default function TabLayout() {
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.card },
-        headerTitleStyle: { color: colors.text },
-        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarLabel: ({ color, children }) => (
-          <Text style={{ color, fontSize: 12 }}>{String(children)}</Text>
-        ),
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={iconFor(route.name)} size={size} color={color} />
-        ),
-      })}
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: '#0f132e', borderTopColor: '#22264f' },
+        tabBarActiveTintColor: '#5d7bff',
+        tabBarInactiveTintColor: '#9aa1d6',
+      }}
     >
-      {/* Скрытый index (не показывать в таб-баре) */}
-      <Tabs.Screen name="index" options={{ href: null }} />
-
-      <Tabs.Screen name="cars" options={{ title: 'Мои авто' }} />
-      <Tabs.Screen name="fuel" options={{ title: 'Заправки' }} />
-      <Tabs.Screen name="service" options={{ title: 'ТО' }} />
-      <Tabs.Screen name="stats" options={{ title: 'Аналитика' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Настройки' }} />
+      <Tabs.Screen
+        name="cars"
+        options={{
+          title: 'Мои авто',
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="car" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="fuel"
+        options={{
+          title: 'Заправки',
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="gas-station" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="service"
+        options={{
+          title: 'ТО',
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="tools" color={color} size={size} />,
+        }}
+      />
+      {/* УБРАЛИ аналитику: если у тебя был файл stats.tsx — оставь его, но убери из табов */}
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: 'Ассистент',
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="smart-toy" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Настройки',
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="settings" color={color} size={size} />,
+        }}
+      />
     </Tabs>
   );
 }
+

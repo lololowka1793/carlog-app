@@ -35,28 +35,44 @@ export async function getActiveId(): Promise<string | null> {
 export async function insert(car: CarProfile): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT INTO cars (id, transport, brand, model, plate, year, unit, vin, odometer, fuel, tanks, isActive)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-    [
-      car.id, car.transport, car.brand, car.model, car.plate,
-      car.year ?? null, car.unit, car.vin ?? null, car.odometer,
-      car.fuel, JSON.stringify(car.tanks),
-    ]
-  );
+  `INSERT INTO cars (id, transport, brand, model, plate, year, unit, vin, odometer, fuel, tanks, isActive)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+  [
+    car.id,
+    car.transport,
+    car.brand,
+    car.model,
+    car.plate,
+    car.year ?? null,
+    car.unit,
+    car.vin ?? null,
+    car.odometer ?? 0,
+    car.fuel,
+    JSON.stringify(car.tanks ?? []),
+  ]
+);
 }
 
 export async function update(car: CarProfile): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `UPDATE cars SET
-      transport=?, brand=?, model=?, plate=?, year=?, unit=?, vin=?, odometer=?, fuel=?, tanks=?
-     WHERE id=?`,
-    [
-      car.transport, car.brand, car.model, car.plate,
-      car.year ?? null, car.unit, car.vin ?? null, car.odometer,
-      car.fuel, JSON.stringify(car.tanks), car.id,
-    ]
-  );
+  `UPDATE cars SET
+    transport=?, brand=?, model=?, plate=?, year=?, unit=?, vin=?, odometer=?, fuel=?, tanks=?
+   WHERE id=?`,
+  [
+    car.transport,
+    car.brand,
+    car.model,
+    car.plate,
+    car.year ?? null,
+    car.unit,
+    car.vin ?? null,
+    car.odometer ?? 0,
+    car.fuel,
+    JSON.stringify(car.tanks ?? []),
+    car.id,
+  ]
+);
 }
 
 export async function remove(id: string): Promise<void> {
