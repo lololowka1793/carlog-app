@@ -1,32 +1,60 @@
 // mobile/db/sqlite.ts
 import * as SQLite from 'expo-sqlite';
+import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 
 let _db: SQLite.SQLiteDatabase | null = null;
 
+async function ensureSQLiteDir() {
+  // В Expo/Android нормальная база лежит в <documentDirectory>/SQLite.
+  // Но в некоторых версиях typings TS "не видит" documentDirectory.
+  // Берём documentDirectory, а если его нет в рантайме/типах — cacheDirectory.
+  const docDir = (FileSystem as any).documentDirectory as string | null | undefined;
+  const baseDir = docDir ?? FileSystem.cacheDirectory; // оба дают строку на native
+  if (!baseDir) return; // (на web sqlite всё равно не работает)
+
+  const dir = baseDir + 'SQLite';
+
+  // Если по этому пути почему-то лежит ФАЙЛ, а не папка — удалим и создадим папку
+  const info = await FileSystem.getInfoAsync(dir);
+  if (info.exists && !info.isDirectory) {
+    await FileSystem.deleteAsync(dir, { idempotent: true });
+  }
+  const again = await FileSystem.getInfoAsync(dir);
+  if (!again.exists) {
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  }
+}
+
 export async function getDb() {
   if (_db) return _db;
+
+  // На web sqlite не поддерживается — просто выходим без подготовки пути
+  if (Platform.OS !== 'web') {
+    await ensureSQLiteDir();
+  }
+
   _db = await SQLite.openDatabaseAsync('carlog.db');
   await _db.execAsync('PRAGMA foreign_keys = ON;');
 
-  // --- Таблица машин: добавили все поля + флаг isActive ---
+  // --- схемы ---
   await _db.execAsync(`
     CREATE TABLE IF NOT EXISTS cars (
       id TEXT PRIMARY KEY,
-      transport TEXT NOT NULL,                   -- 'car' | 'motorcycle' | ...
+      transport TEXT NOT NULL,
       brand TEXT NOT NULL,
       model TEXT NOT NULL,
       plate TEXT NOT NULL,
       year INTEGER,
-      unit TEXT NOT NULL,                        -- 'km' | 'mi'
+      unit TEXT NOT NULL,
       vin TEXT,
       odometer REAL NOT NULL,
-      fuel TEXT NOT NULL,                        -- 'gasoline' | 'diesel' | ...
-      tanks TEXT NOT NULL,                       -- JSON: "[70]" или "[70,30]"
-      isActive INTEGER NOT NULL DEFAULT 0        -- 0/1
+      fuel TEXT NOT NULL,
+      tanks TEXT NOT NULL,
+      isActive INTEGER NOT NULL DEFAULT 0
     );
   `);
 
-  // --- Таблица заправок (как сделали ранее) ---
   await _db.execAsync(`
     CREATE TABLE IF NOT EXISTS fuel_entries (
       id TEXT PRIMARY KEY,
@@ -41,7 +69,6 @@ export async function getDb() {
     );
   `);
 
-  // На будущее: таблица ТО (если ещё не добавлял)
   await _db.execAsync(`
     CREATE TABLE IF NOT EXISTS service_entries (
       id TEXT PRIMARY KEY,

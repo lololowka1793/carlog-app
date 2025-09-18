@@ -2,7 +2,8 @@
 import { getDb } from './sqlite';
 import type { FuelEntry } from '../models/fuelEntry';
 
-export async function listByCar(carId: string): Promise<FuelEntry[]> {
+export async function listByCar(carId: string | null | undefined): Promise<FuelEntry[]> {
+  if (!carId) return [];
   const db = await getDb();
   const rows = await db.getAllAsync<any>(
     `SELECT * FROM fuel_entries WHERE carId = ? ORDER BY date DESC, odometer DESC`,

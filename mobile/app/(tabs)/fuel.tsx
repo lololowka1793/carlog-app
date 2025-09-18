@@ -9,6 +9,14 @@ import type { FuelEntry } from '../../models/fuelEntry';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+const COLORS = {
+  BG: '#0f132e',
+  CARD: '#161a3a',
+  LINE: '#27306a',
+  MUTED: '#aab0f0',
+  ACCENT: '#5d7bff',
+};
+
 export default function FuelScreen() {
   const { cars, activeCarId } = useCarsStore();
   const unit = useMemo(
@@ -18,7 +26,7 @@ export default function FuelScreen() {
 
   const { entries, load, add } = useFuelStore();
 
-  // форма добавления (в модалке)
+  // форма
   const [modal, setModal] = useState(false);
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [odometer, setOdometer] = useState<string>('');
@@ -30,7 +38,16 @@ export default function FuelScreen() {
     if (activeCarId) load(activeCarId);
   }, [activeCarId, load]);
 
-  // группируем по месяцам
+  // нет активного авто — показываем заглушку
+  if (!activeCarId) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.empty}>Сначала выберите активный автомобиль во вкладке «Мои авто»</Text>
+      </View>
+    );
+  }
+
+  // группировка по месяцам
   const sections = useMemo(() => {
     const groups: Record<string, FuelEntry[]> = {};
     entries.forEach(e => {
@@ -38,16 +55,13 @@ export default function FuelScreen() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(e);
     });
-    return Object.keys(groups).map(title => ({
-      title,
-      data: groups[title],
-    }));
+    return Object.keys(groups).map(title => ({ title, data: groups[title] }));
   }, [entries]);
 
   const submit = async () => {
-    if (!activeCarId) return Alert.alert('Заправки', 'Сначала выберите активный авто во вкладке «Мои авто».');
-    if (!odometer || !liters || !price) return Alert.alert('Заправки', 'Заполните одометр, литры и цену.');
-
+    if (!odometer || !liters || !price) {
+      return Alert.alert('Заправки', 'Заполните одометр, литры и цену.');
+    }
     const entry: FuelEntry = {
       id: String(Date.now()),
       carId: activeCarId,
@@ -93,7 +107,7 @@ export default function FuelScreen() {
             </View>
 
             <Text style={styles.amount}>
-              {item.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })} ₽
+              {item.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽
             </Text>
           </View>
         )}
@@ -101,29 +115,39 @@ export default function FuelScreen() {
 
       {/* FAB */}
       <Pressable style={styles.fab} onPress={() => setModal(true)}>
-        <Text style={{ color: 'white', fontSize: 28, lineHeight: 28 }}>＋</Text>
+        <Text style={{ color: 'white', fontSize: 32, lineHeight: 32 }}>＋</Text>
       </Pressable>
 
-      {/* Модалка добавления */}
+      {/* Модалка */}
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Новая заправка</Text>
+        <View style={styles.backdrop}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Новая заправка</Text>
 
-            <Text style={styles.label}>Дата</Text>
-            <TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="2025-09-17" />
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Text style={styles.label}>Дата</Text>
+                <TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="2025-09-18" />
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.label}>Одометр</Text>
+                <TextInput style={styles.input} value={odometer} onChangeText={setOdometer} keyboardType="numeric" />
+              </View>
+            </View>
 
-            <Text style={styles.label}>Одометр</Text>
-            <TextInput style={styles.input} value={odometer} onChangeText={setOdometer} keyboardType="numeric" />
-
-            <Text style={styles.label}>Литры</Text>
-            <TextInput style={styles.input} value={liters} onChangeText={setLiters} keyboardType="numeric" />
-
-            <Text style={styles.label}>Цена за литр</Text>
-            <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" />
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Text style={styles.label}>Топливо (л)</Text>
+                <TextInput style={styles.input} value={liters} onChangeText={setLiters} keyboardType="numeric" />
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.label}>Цена/л</Text>
+                <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" />
+              </View>
+            </View>
 
             <Pressable style={styles.toggle} onPress={() => setIsFull(v => !v)}>
-              <View style={[styles.checkbox, isFull && styles.checkboxOn]} />
+              <View style={[styles.switchBox, isFull && styles.switchOn]} />
               <Text style={styles.toggleText}>Полный бак</Text>
             </Pressable>
 
@@ -142,53 +166,50 @@ export default function FuelScreen() {
   );
 }
 
-const BG = '#0f132e';
-const MUTED = '#aab0f0';
-const ACCENT = '#5d7bff';
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  empty: { color: MUTED, textAlign: 'center', marginTop: 40, paddingHorizontal: 16 },
-  sectionHeader: {
-    color: MUTED, fontWeight: '600', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6,
-  },
+  // список
+  container: { flex: 1, backgroundColor: COLORS.BG },
+  empty: { color: COLORS.MUTED, textAlign: 'center', marginTop: 40, paddingHorizontal: 16 },
+  sectionHeader: { color: COLORS.MUTED, fontWeight: '600', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6 },
   itemRow: {
     flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomColor: '#1f2455', borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 14, borderBottomColor: COLORS.LINE, borderBottomWidth: 1,
   },
-  timelineCol: { width: 30, alignItems: 'center' },
-  timelineDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT, marginTop: 4 },
-  timelineLine: { flex: 1, width: 2, backgroundColor: ACCENT, marginTop: 2, marginBottom: -12 },
-  itemContent: { flex: 1, marginLeft: 6 },
+  timelineCol: { width: 28, alignItems: 'center' },
+  timelineDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: COLORS.ACCENT, marginTop: 5 },
+  timelineLine: { flex: 1, width: 2, backgroundColor: COLORS.ACCENT, marginTop: 2, marginBottom: -12, opacity: 0.4 },
+  itemContent: { flex: 1, marginLeft: 8 },
   itemTitle: { color: 'white', fontWeight: '600' },
-  itemSub: { color: MUTED, fontSize: 12 },
+  itemSub: { color: COLORS.MUTED, fontSize: 12 },
   amount: { color: 'white', fontWeight: '700' },
 
+  // FAB
   fab: {
     position: 'absolute', right: 18, bottom: 24,
-    width: 56, height: 56, borderRadius: 28,
+    width: 60, height: 60, borderRadius: 30,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: ACCENT, elevation: 6,
+    backgroundColor: COLORS.ACCENT, elevation: 8,
   },
 
-  modalBackdrop: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center', justifyContent: 'flex-end',
-  },
-  modalCard: {
-    alignSelf: 'stretch', backgroundColor: '#161a3a', padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16,
-  },
-  modalTitle: { color: 'white', fontWeight: '700', fontSize: 16, marginBottom: 12 },
-  label: { color: MUTED, marginTop: 6, marginBottom: 4, fontSize: 12 },
-  input: { backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  toggle: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: ACCENT, marginRight: 8 },
-  checkboxOn: { backgroundColor: ACCENT },
+  // модальный лист
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: COLORS.CARD, padding: 16, borderTopLeftRadius: 18, borderTopRightRadius: 18 },
+  sheetTitle: { color: 'white', fontWeight: '700', fontSize: 16, marginBottom: 10 },
+
+  row: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  col: { flex: 1 },
+  label: { color: COLORS.MUTED, marginBottom: 6, fontSize: 12 },
+  input: { backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+
+  toggle: { flexDirection: 'row', alignItems: 'center', marginTop: 6, marginBottom: 12 },
+  switchBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.ACCENT, marginRight: 8 },
+  switchOn: { backgroundColor: COLORS.ACCENT },
   toggleText: { color: 'white' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 14, gap: 10 },
-  btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+  btn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10 },
   btnGhost: { borderWidth: 1, borderColor: '#3b3f74' },
-  btnGhostText: { color: MUTED },
-  btnPrimary: { backgroundColor: ACCENT },
-  btnPrimaryText: { color: 'white', fontWeight: '600' },
+  btnGhostText: { color: COLORS.MUTED },
+  btnPrimary: { backgroundColor: COLORS.ACCENT },
+  btnPrimaryText: { color: 'white', fontWeight: '700' },
 });

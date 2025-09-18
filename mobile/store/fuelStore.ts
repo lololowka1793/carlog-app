@@ -2,13 +2,14 @@
 import { create } from 'zustand';
 import type { FuelEntry } from '../models/fuelEntry';
 import * as fuelRepo from '../db/fuelRepo';
+import * as carRepo from '../db/carRepo';
 
 interface FuelState {
   entries: FuelEntry[];
-  load: (carId: string) => Promise<void>;
+  load: (carId: string | null) => Promise<void>;
   add: (entry: Omit<FuelEntry, 'id'> & { id?: string }) => Promise<void>;
   update: (entry: FuelEntry) => Promise<void>;
-  remove: (id: string, carId: string) => Promise<void>;
+  remove: (id: string, carId: string | null) => Promise<void>;
 }
 
 export const useFuelStore = create<FuelState>((set, get) => ({
@@ -23,6 +24,10 @@ export const useFuelStore = create<FuelState>((set, get) => ({
   add: async (entry) => {
     const toSave: FuelEntry = { id: entry.id ?? String(Date.now()), ...entry };
     await fuelRepo.insert(toSave);
+
+    // обновляем одометр машины, если вырос
+    await carRepo.updateOdometerIfHigher(toSave.carId, toSave.odometer);
+
     await get().load(entry.carId);
   },
 
@@ -33,6 +38,6 @@ export const useFuelStore = create<FuelState>((set, get) => ({
 
   remove: async (id, carId) => {
     await fuelRepo.remove(id);
-    await get().load(carId);
+    await get().load(carId ?? null);
   },
 }));

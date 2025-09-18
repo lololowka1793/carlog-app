@@ -71,3 +71,17 @@ export async function setActive(id: string): Promise<void> {
     await db.runAsync(`UPDATE cars SET isActive=1 WHERE id=?`, [id]);
   });
 }
+export async function getById(id: string) {
+  const db = await getDb();
+  const row = await db.getFirstAsync<any>(`SELECT * FROM cars WHERE id=?`, [id]);
+  return row ? rowToCar(row) : null;
+}
+
+export async function updateOdometerIfHigher(carId: string, newOdometer: number) {
+  const db = await getDb();
+  const current = await db.getFirstAsync<any>(`SELECT odometer FROM cars WHERE id=?`, [carId]);
+  const cur = current ? Number(current.odometer) : 0;
+  if (newOdometer > cur) {
+    await db.runAsync(`UPDATE cars SET odometer=? WHERE id=?`, [newOdometer, carId]);
+  }
+}
