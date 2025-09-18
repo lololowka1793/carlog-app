@@ -1,18 +1,17 @@
 // mobile/store/carsStore.ts
 import { create } from 'zustand';
 import type { CarProfile } from '../models/carProfile';
-import { loadData, saveData } from '../services/storage';
-
-const KEY = 'cars';
+import * as carRepo from '../db/carRepo';
 
 interface CarsState {
   cars: CarProfile[];
   activeCarId: string | null;
+
   load: () => Promise<void>;
-  add: (car: CarProfile) => Promise<void>;
+  add: (car: Omit<CarProfile, 'id'> & { id?: string }) => Promise<void>;
   update: (car: CarProfile) => Promise<void>;
   remove: (id: string) => Promise<void>;
-  setActive: (id: string) => void;
+  setActive: (id: string) => Promise<void>;
 }
 
 export const useCarsStore = create<CarsState>((set, get) => ({
@@ -20,27 +19,28 @@ export const useCarsStore = create<CarsState>((set, get) => ({
   activeCarId: null,
 
   load: async () => {
-    const data = await loadData(KEY);
-    set({ cars: (data ?? []) as CarProfile[] });   // <-- явное приведение
+    const [cars, activeId] = await Promise.all([carRepo.list(), carRepo.getActiveId()]);
+    set({ cars, activeCarId: activeId });
   },
 
   add: async (car) => {
-    const next = [...get().cars, car];
-    await saveData(KEY, next);
-    set({ cars: next });
+    const toSave: CarProfile = { id: car.id ?? String(Date.now()), ...car };
+    await carRepo.insert(toSave);
+    await get().load();
   },
 
   update: async (car) => {
-    const next = get().cars.map(c => c.id === car.id ? car : c);
-    await saveData(KEY, next);
-    set({ cars: next });
+    await carRepo.update(car);
+    await get().load();
   },
 
   remove: async (id) => {
-    const next = get().cars.filter(c => c.id !== id);
-    await saveData(KEY, next);
-    set({ cars: next });
+    await carRepo.remove(id);
+    await get().load();
   },
 
-  setActive: (id) => set({ activeCarId: id }),
+  setActive: async (id) => {
+    await carRepo.setActive(id);
+    await get().load();
+  },
 }));

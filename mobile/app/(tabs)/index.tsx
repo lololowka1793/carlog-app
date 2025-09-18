@@ -15,6 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useProfileStore } from '../../store/profileStore';
 import type { CarProfile } from '../../models/carProfile';
 import { router } from 'expo-router';
+import { useCarsStore } from '../../store/carsStore';
 
 // Если нужен редирект со стартовой страницы — выделяем его как именованный экспорт:
 export const IndexRedirect = () => {
@@ -89,19 +90,16 @@ const ProfileScreen: React.FC = () => {
       return Alert.alert('Профиль авто', 'Одометр укажите числом');
 
     const data: CarProfile = {
-      id: profile?.id ?? String(Date.now()),   // генерируем id, если его нет
-      transport,
-      brand,
-      model: model.trim(),
-      plate: plate.trim().toUpperCase(),
+      id: profile?.id ?? String(Date.now()),
+      transport, brand, model, plate,
       year: year ? Number(year) : undefined,
-      tanks: hasTwoTanks ? [Number(tank1), Number(tank2)] : [Number(tank1)],
-      fuel,
-      unit,
-      vin: vin.trim() || undefined,
+      unit, vin: vin || undefined,
       odometer: Number(odometer),
+      fuel,
+      tanks: hasTwoTanks ? [Number(tank1), Number(tank2)] : [Number(tank1)],
     };
-    await setProfile(data);
+    await useCarsStore.getState().add(data); // или update(data), если редактирование
+
     Alert.alert('Профиль авто', 'Данные сохранены ✅');
 
   };
