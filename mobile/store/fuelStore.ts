@@ -1,44 +1,38 @@
 // mobile/store/fuelStore.ts
 import { create } from 'zustand';
 import type { FuelEntry } from '../models/fuelEntry';
-import { loadData, saveData } from '../services/storage';
-
-const KEY = 'fuelEntries';
+import * as fuelRepo from '../db/fuelRepo';
 
 interface FuelState {
   entries: FuelEntry[];
-  load: () => Promise<void>;
-  add: (entry: FuelEntry) => Promise<void>;
+  load: (carId: string) => Promise<void>;
+  add: (entry: Omit<FuelEntry, 'id'> & { id?: string }) => Promise<void>;
   update: (entry: FuelEntry) => Promise<void>;
-  remove: (id: string) => Promise<void>;
-  getByCarId: (carId: string) => FuelEntry[];
+  remove: (id: string, carId: string) => Promise<void>;
 }
 
 export const useFuelStore = create<FuelState>((set, get) => ({
   entries: [],
 
-  load: async () => {
-    const data = await loadData(KEY);
-    set({ entries: (data ?? []) as FuelEntry[] }); // <-- явное приведение
+  load: async (carId) => {
+    if (!carId) { set({ entries: [] }); return; }
+    const list = await fuelRepo.listByCar(carId);
+    set({ entries: list });
   },
 
   add: async (entry) => {
-    const next = [...get().entries, entry];
-    await saveData(KEY, next);
-    set({ entries: next });
+    const toSave: FuelEntry = { id: entry.id ?? String(Date.now()), ...entry };
+    await fuelRepo.insert(toSave);
+    await get().load(entry.carId);
   },
 
   update: async (entry) => {
-    const next = get().entries.map(e => e.id === entry.id ? entry : e);
-    await saveData(KEY, next);
-    set({ entries: next });
+    await fuelRepo.update(entry);
+    await get().load(entry.carId);
   },
 
-  remove: async (id) => {
-    const next = get().entries.filter(e => e.id !== id);
-    await saveData(KEY, next);
-    set({ entries: next });
+  remove: async (id, carId) => {
+    await fuelRepo.remove(id);
+    await get().load(carId);
   },
-
-  getByCarId: (carId) => get().entries.filter(e => e.carId === carId),
 }));
